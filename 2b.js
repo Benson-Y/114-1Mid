@@ -12,68 +12,42 @@
 // 引入必要的 Node.js 核心模組
 // ------------------------------------------
 
-// http 模組：用於創建 HTTP 伺服器
-const http = require('http');
 
-// fs 模組 (File System)：用於讀取檔案系統中的文件
-const fs = require('fs');
+const http = require('http'); // 導入http模組,用於創建HTTP伺服器
 
-// ejs 模組：用於渲染 EJS 模板引擎，將動態內容嵌入 HTML
-const ejs = require('ejs');
 
-// path 模組：用於處理和解析文件路徑，提取副檔名
-const path = require('path');
+const fs = require('fs'); // 導入fs模組，讀取文件
 
-// ==========================================
-// 創建並配置 HTTP 伺服器
-// ==========================================
 
-http.createServer((req, res) => {
-  // req (request): 請求物件，包含客戶端發送的所有資訊（URL、標頭等）
-  // res (response): 回應物件，用於向客戶端發送回應（HTML、狀態碼等）
+const ejs = require('ejs');  // 導入ejs模組 用於EJS模板渲染
 
-  // ==========================================
-  // 步驟 1: URL 路由與頁面分派
-  // ==========================================
 
-  // 宣告兩個變數來處理不同類型的請求：
-  // filePath: 儲存要渲染的 EJS 模板文件路徑
-  // fileOtherFile: 儲存靜態資源（CSS、JS 等）的路徑
+const path = require('path'); // 導入path模組 用於處理文件和目錄路徑
+
+
+http.createServer((req, res) => {  //創立伺服器，並設定回調函數處理請求
+
   let filePath = '';
   let fileOtherFile = '';
 
-  // Switch根據不同路由要寫的部分
+
+switch (req.url) {
+    case '/':
+      filePath = '/index.ejs';        // 若收到的值為 '/', 則filepath渲染 inddex.ejs
+      break;
+    case '/calculator':
+      filePath = '/index2.ejs';       // 若收到的值為 '/calculator', 則filepath渲染 inddex2.ejs
+      break;
+}
+
+if (req.url.endsWith('.css')  ||  (req.url.endsWith('.js')) || (req.url.endsWith('.png'))) {
+    fileOtherFile = req.url;
+} // 這裡是判斷若附檔名為 .css 、 .js、 .png 則把路徑存到 fileOtherFile 變數中
 
 
+  const extname = (fileOtherFile === '') ? path.extname(filePath) : path.extname(fileOtherFile); //以文件的類型來分成filepath(ejs檔案)或fileOteherfile(.css、.png、.js)
 
 
-
-  
-
-  // ==========================================
-  // 步驟 2: 判斷文件類型（提取副檔名）
-  // ==========================================
-
-  // 使用三元運算子判斷要從哪個路徑提取副檔名：
-  // - 如果 fileOtherFile 是空字串 → 從 filePath 提取（代表是 EJS 頁面）
-  // - 如果 fileOtherFile 有值 → 從 fileOtherFile 提取（代表是靜態資源）
-  //
-  // path.extname() 函數會提取文件的副檔名
-  // 範例：
-  //   path.extname('/index.ejs') → '.ejs'
-  //   path.extname('/style.css') → '.css'
-  //   path.extname('/script.js') → '.js'
-  const extname = (fileOtherFile === '') ? path.extname(filePath) : path.extname(fileOtherFile);
-
-  // ==========================================
-  // 步驟 3: 定義 MIME 類型映射表
-  // ==========================================
-
-  // MIME 類型（Content-Type）告訴瀏覽器如何處理接收到的文件
-  // 如果設定錯誤，可能導致：
-  // - CSS 不生效（被當作純文字）
-  // - JavaScript 無法執行
-  // - 圖片無法顯示
   const contentTypes = {
     '.html': 'text/html; charset=utf-8',        // HTML 網頁文件
     '.ejs': 'text/html; charset=utf-8',         // EJS 模板（渲染後輸出為 HTML）
@@ -85,53 +59,27 @@ http.createServer((req, res) => {
     '.gif': 'image/gif',                        // GIF 動畫圖片
     '.svg': 'image/svg+xml',                    // SVG 向量圖形
     '.ico': 'image/x-icon'                      // 網站 favicon 圖示
-  };
+  }; // 定義文件類型,告訴瀏覽器收到的文件如何處理
 
-  // ==========================================
-  // 步驟 4: 查找對應的 Content-Type
-  // ==========================================
 
-  // 從映射表中查找當前文件對應的 MIME 類型
-  // 使用 || 運算子提供預設值：
-  // - 如果在映射表中找到對應的副檔名，使用該 MIME 類型
-  // - 如果找不到，預設使用 'text/plain'（純文字格式）
   const contentType = contentTypes[extname] || 'text/plain';
+// 找到對應的副檔名,使用該類型，找不到則使用'text/plain'
 
-  // ==========================================
-  // 請求處理：根據文件類型分流
-  // ==========================================
+  if (extname === '.ejs') {  //若副檔名為.ejs則進入此區塊
 
-  // 使用 if-else 判斷式區分兩種處理方式：
-  // 1. EJS 模板渲染（動態內容）
-  // 2. 靜態文件傳送（CSS、JS、圖片等）
 
-  // ------------------------------------------
-  // 處理方式 A: EJS 模板渲染
-  // ------------------------------------------
-  // 適用情況：extname === '.ejs'
-  // 處理頁面：index.ejs, index2.ejs, index3.ejs
-  if (extname === '.ejs') {
+    fs.readFile(('.' + filePath), 'utf8', (err, template) => {   //讀取完整路徑的ejs文件,並且指定編碼為utf8，以避免中文亂碼
 
-    // 讀取 EJS 模板文件
-    // 參數說明：
-    //   ('.' + filePath): 構建完整路徑，'.' 代表當前目錄
-    //                     例如：'/index.ejs' → './index.ejs'
-    //   'utf8': 指定文件編碼格式為 UTF-8，確保中文正確顯示
-    //   (err, template): 回調函數的參數
-    //                    err: 錯誤物件（若成功則為 null）
-    //                    template: 讀取到的文件內容（字串）
-    fs.readFile(('.' + filePath), 'utf8', (err, template) => {
-
-      // 錯誤處理：檢查文件是否讀取失敗
-      if (err) {
+     
+      if (err) {  //若發生錯誤
         // 設定 HTTP 狀態碼 500（Internal Server Error - 伺服器內部錯誤）
         // 這表示伺服器嘗試處理請求時發生問題
-        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' }); //設定http狀態碼 500 
 
-        // 向客戶端發送錯誤訊息，包含具體的錯誤原因
-        res.end('錯誤：無法讀取模板文件 - ' + err.message);
+       
+        res.end('錯誤：無法讀取模板文件 - ' + err.message);  //回應客戶端的頁面寫入錯誤訊息
 
-        // 使用 return 提前結束函數，避免執行後續的渲染代碼
+
         return;
       }
 
@@ -165,44 +113,28 @@ http.createServer((req, res) => {
     //   '/script.js' → './script.js'
     const staticFilePath = '.' + fileOtherFile;
 
-    // 讀取靜態文件
-    // 注意：這裡「沒有」指定 'utf8' 編碼
-    // 原因：某些文件是二進制格式（如圖片、字型），不能用文字方式讀取
-    // fs.readFile 會以 Buffer 格式讀取文件（可處理任何類型的文件）
+
     fs.readFile(staticFilePath, (err, content) => {
 
-      // 檢查靜態文件是否讀取失敗
-      if (err) {
-        // ------------------------------------------
-        // 靜態文件不存在 → 顯示 404 錯誤頁面
-        // ------------------------------------------
 
-        // 當靜態資源載入失敗時（例如：請求不存在的文件或網址）
-        // 不直接回傳錯誤訊息，而是顯示友善的 404 錯誤頁面（index3.ejs）
+      if (err) {  //若發生錯誤
+        fs.readFile('index3.ejs', 'utf8', (err, template404) => {  //讀取index3.ejs文件
 
-        // 設定 HTTP 狀態碼 404（找不到資源）
-        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' }); //設定HTTP狀態碼404，表示找不到文件
 
-        // 向客戶端發送 404 錯誤訊息
-        res.end('404 - 找不到文件：');
+          if (err) { //若發生錯誤
+            console.log('無法讀取 404 模板文件 - ' + err.message); // 終端顯示無法讀取文件加上錯誤訊息
+            res.end('錯誤：無法讀取 404 模板文件'); //回應頁面上寫入錯誤訊息
+            
+          }else {
+            res.end(template404); //將讀取到的index3.ejs文件內容回應給客戶端
+          }
+        });
 
       } else {
-        // ------------------------------------------
-        // 靜態文件讀取成功 → 直接發送文件內容
-        // ------------------------------------------
 
-        // 設定 HTTP 狀態碼 200（成功）
-        // Content-Type 根據文件副檔名自動設定（從 contentTypes 映射表查詢）
-        // 例如：
-        //   .css 檔案 → 'text/css; charset=utf-8'
-        //   .js 檔案 → 'text/javascript; charset=utf-8'
-        //   .png 檔案 → 'image/png'
         res.writeHead(200, { 'Content-Type': contentType });
 
-        // 將文件內容發送給客戶端
-        // content 變數的類型取決於文件：
-        // - 文字文件（CSS、JS）：Buffer 會自動轉換為文字
-        // - 二進制文件（圖片）：直接以 Buffer 形式傳送
         res.end(content);
       }
     });

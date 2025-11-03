@@ -1,28 +1,16 @@
-// ==========================================
-// 商品庫存與查詢系統
-// ==========================================
-// 功能說明：
-//  getLowStock - 篩選出庫存不足的商品
-//  updateStock - 批次更新商品庫存
-// ==========================================
 
-// ==========================================
-//  取得低庫存商品清單
-// ==========================================
 
-/**
- * 篩選出庫存量少於 10 的商品名稱
- *
- * @param {Array} products - 商品陣列，每個元素包含 { name, stock }
- * @returns {Array} 庫存不足商品的名稱陣列
- *
- * 範例：
- *   輸入: [{ name: "mouse", stock: 5 }, { name: "keyboard", stock: 25 }]
- *   輸出: ["mouse"]
- */
-function getLowStock(products) {
- 
-}
+function getLowStock(products) { //建立一個名為getloestock的函式,參數為products
+ let lowStock= [];  //宣告一個空陣列lowstock用來存放庫存少於10的商品名稱
+
+ for (let i = 0; i < products.length; i++) {  //使用for迴圈,當i小於商品的數量時,i累加1
+   if (products[i].stock < 10) { //使用if判斷式,當商品的庫存小於10時
+     lowStock.push(products[i].name);  //將該商品的名稱push到lowstock陣列中
+   };
+ } 
+ console.log('庫存少於10的項目:', lowStock); //在終端機顯示庫存少於10的商品名稱
+//
+};
 
 
 // ==========================================
@@ -73,7 +61,7 @@ console.log("(a) 測試 getLowStock - 查詢低庫存商品");
 console.log("==========================================");
 
 const lowStockItems = getLowStock(products);
-console.log("庫存少於 10 的商品：", lowStockItems);
+//console.log("庫存少於 10 的商品：", lowStockItems);
 console.log("預期結果：['mouse', 'monitor']");
 
 // 檢查結果是否正確
